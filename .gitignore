@@ -159,7 +159,12 @@ cython_debug/
 #  option (not recommended) you can uncomment the following to ignore the entire idea folder.
 .idea/
 
+# Internal files
 images/
+videos/
+temp.png
+temp.jpg
+temp.jpeg
 
 # PyTorch YOLO weights files
 yolov*[0-9][a-z-]*.pt
