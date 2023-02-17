@@ -1,9 +1,12 @@
 import os
 import cv2
 import json
+import numpy as np
+from random import seed
 from ultralytics import YOLO
 from distinctipy import distinctipy
 
+seed(2)
 CLASS_LIST = [
     'person', 'bicycle', 'car', 'motorcycle', 'airplane', 'bus', 'train', 'truck', 'boat', 'traffic light',
     'fire hydrant', 'stop sign', 'parking meter', 'bench', 'bird', 'cat', 'dog', 'horse', 'sheep', 'cow', 'elephant',
@@ -15,45 +18,38 @@ CLASS_LIST = [
     'book', 'clock', 'vase', 'scissors', 'teddy bear', 'hair drier', 'toothbrush'
 ]
 CLASS_COLORS = distinctipy.get_colors(len(CLASS_LIST))
-CLASS_COLORS = [tuple([int(x * 256) for x in color]) for color in CLASS_COLORS]
+CLASS_COLORS = [tuple([int(x * 192 + 64) for x in color]) for color in CLASS_COLORS]
 
 
 def object_segmentation(image, model, temp_filename):
     ALPHA = 0.5
-    results = model.predict(source=temp_filename, conf=0.25, return_outputs=True)
-    result_list_json = []
-    for result in results:
-        if len(result['segment']) != len(result['det']):
-            raise Exception('Number of segmentation and detection results do not match')
-        image_mask = image.copy()
-        for idx in range(len(result['segment'])):
-            segment = result['segment'][idx].astype(int)
-            detection = result['det'][idx]
-            result_json = {
-                'class': CLASS_LIST[int(detection[5])],
-                'confidence': float(detection[4]),
-                'bbox': {
-                    'x_min': int(detection[0]),
-                    'y_min': int(detection[1]),
-                    'x_max': int(detection[2]),
-                    'y_max': int(detection[3]),
-                },
-                'segmentation': segment.tolist(),
-            }
-            result_list_json.append(result_json)
-            class_color = CLASS_COLORS[int(detection[5])]
-            class_color = (class_color[0], class_color[1], class_color[2], 128)
-            cv2.fillPoly(image_mask, [segment], class_color)
-        image = cv2.addWeighted(image, ALPHA, image_mask, 1 - ALPHA, 0)
-        for idx in range(len(result['det'])):
-            detection = result['det'][idx]
-            text = f"{CLASS_LIST[int(detection[5])]}: {detection[4] * 100:.2f}%"
-            class_color = CLASS_COLORS[int(detection[5])]
-            text_color = tuple([256 - x for x in class_color])
-            cv2.rectangle(image, (int(detection[0]), int(detection[1])), (int(detection[2]), int(detection[3])), class_color, 2)
-            (text_width, text_height), baseline = cv2.getTextSize(text, cv2.FONT_HERSHEY_SIMPLEX, 0.5, 1)
-            cv2.rectangle(image, (int(detection[0]), int(detection[1])), (int(detection[0]) + text_width, int(detection[1]) - text_height - baseline), class_color, -1)
-            cv2.putText(image, text, (int(detection[0]), int(detection[1]) - 4), cv2.FONT_HERSHEY_SIMPLEX, 0.5, text_color, 1)
+    results = model.predict(temp_filename)
+    result_list_json = [dict() for _ in range(len(results[0]))]
+    for (idx, result) in enumerate(results[0]):
+        detection = result.boxes.boxes[0]
+        segmentation = results[0].masks.segments[idx]
+        mask = cv2.resize(result.masks.data.cpu().numpy(), (image.shape[1], image.shape[0]))
+        class_color = CLASS_COLORS[int(detection[5])]
+        image_mask = np.stack([mask * class_color[0], mask * class_color[1], mask * class_color[2]], axis=2).astype(np.uint8)
+        image = cv2.addWeighted(image, 1, image_mask, ALPHA, 0)
+        text = f"{CLASS_LIST[int(detection[5])]}: {detection[4] * 100:.2f}%"
+        text_color = tuple([256 - x for x in class_color])
+        cv2.rectangle(image, (int(detection[0]), int(detection[1])), (int(detection[2]), int(detection[3])), class_color, 2)
+        (text_width, text_height), baseline = cv2.getTextSize(text, cv2.FONT_HERSHEY_SIMPLEX, 0.5, 1)
+        cv2.rectangle(image, (int(detection[0]), int(detection[1])), (int(detection[0]) + text_width, int(detection[1]) - text_height - baseline), class_color, -1)
+        cv2.putText(image, text, (int(detection[0]), int(detection[1]) - 4), cv2.FONT_HERSHEY_SIMPLEX, 0.5, text_color, 1)
+        result_list_json[idx] = {
+            'class': CLASS_LIST[int(detection[5])],
+            'confidence': float(detection[4]),
+            'bbox': {
+                'x_min': int(detection[0]),
+                'y_min': int(detection[1]),
+                'x_max': int(detection[2]),
+                'y_max': int(detection[3]),
+            },
+            'mask': mask.tolist(),
+            'segmentation': segmentation.tolist(),
+        }
     os.remove(temp_filename)
     return image, result_list_json
 
