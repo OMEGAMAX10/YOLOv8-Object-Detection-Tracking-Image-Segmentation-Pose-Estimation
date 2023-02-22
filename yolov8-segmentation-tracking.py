@@ -21,6 +21,7 @@ def result_to_json(result: Results, tracker=None):
     Returns:
         result_list_json: detection result in json format
     """
+    len_results = len(result.boxes)
     result_list_json = [
         {
             'class_id': int(result.boxes.cls[idx]),
@@ -34,7 +35,7 @@ def result_to_json(result: Results, tracker=None):
             },
             'mask': cv2.resize(result.masks.data[idx].cpu().numpy(), (result.orig_shape[1], result.orig_shape[0])).tolist(),
             'segments': result.masks.segments[idx].tolist(),
-        } for idx in range(len(result))
+        } for idx in range(len_results)
     ]
     if tracker is not None:
         bbs = [
@@ -47,7 +48,7 @@ def result_to_json(result: Results, tracker=None):
                 ],
                 result_list_json[idx]['confidence'],
                 result_list_json[idx]['class'],
-            ) for idx in range(len(result))
+            ) for idx in range(len_results)
         ]
         tracks = tracker.update_tracks(bbs, frame=result.orig_img)
         for idx in range(len(result_list_json)):
@@ -67,18 +68,16 @@ def view_result_ultralytics(result: Results, result_list_json, centers=None):
     Returns:
         result_image_ultralytics: result image from ultralytics YOLOv8 built-in visualization function
     """
-    result_cpu = result.cpu()
-    result_cpu.names = result.names
-    result_image_ultralytics = result_cpu.visualize()
-    for result in result_list_json:
+    result_image_ultralytics = result.plot()
+    for result_json in result_list_json:
         class_color = COLORS[result['class_id'] % len(COLORS)]
-        if 'object_id' in result and centers is not None:
-            centers[result['object_id']].append((int((result['bbox']['x_min'] + result['bbox']['x_max']) / 2), int((result['bbox']['y_min'] + result['bbox']['y_max']) / 2)))
-            for j in range(1, len(centers[result['object_id']])):
-                if centers[result['object_id']][j - 1] is None or centers[result['object_id']][j] is None:
+        if 'object_id' in result_json and centers is not None:
+            centers[result_json['object_id']].append((int((result_json['bbox']['x_min'] + result_json['bbox']['x_max']) / 2), int((result_json['bbox']['y_min'] + result_json['bbox']['y_max']) / 2)))
+            for j in range(1, len(centers[result_json['object_id']])):
+                if centers[result_json['object_id']][j - 1] is None or centers[result_json['object_id']][j] is None:
                     continue
                 thickness = int(np.sqrt(64 / float(j + 1)) * 2)
-                cv2.line(result_image_ultralytics, centers[result['object_id']][j - 1], centers[result['object_id']][j], class_color, thickness)
+                cv2.line(result_image_ultralytics, centers[result_json['object_id']][j - 1], centers[result_json['object_id']][j], class_color, thickness)
     return result_image_ultralytics
 
 
