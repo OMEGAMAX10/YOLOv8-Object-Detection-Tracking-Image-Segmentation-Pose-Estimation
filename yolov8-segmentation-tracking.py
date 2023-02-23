@@ -213,9 +213,6 @@ with tab_live_stream:
     CAM_ID = st.text_input("Enter a live stream source (number for webcam, RTSP or HTTP(S) URL):", "0")
     if CAM_ID.isnumeric():
         CAM_ID = int(CAM_ID)
-    cam = cv2.VideoCapture(CAM_ID)
-    cam.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
-    cam.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
     # create two columns with two buttons each
     col_run, col_stop = st.columns(2)
     run = col_run.button("Start Live Stream Processing")
@@ -224,6 +221,9 @@ with tab_live_stream:
         run = False
     FRAME_WINDOW = st.image([], width=1280)
     if run:
+        cam = cv2.VideoCapture(CAM_ID)
+        cam.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
+        cam.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
         tracker = DeepSort(max_age=5)
         centers = [deque(maxlen=30) for _ in range(10000)]
         while True:
