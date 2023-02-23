@@ -185,7 +185,6 @@ with tab_video:
         os.remove("temp.mp4")
         st.video(result_video, format="video/mp4", start_time=0)
 
-
 with tab_live_stream:
     st.header("Live Stream Processing using YOLOv8")
     CAM_ID = st.text_input("Enter a live stream source (number for webcam, RTSP or HTTP(S) URL):", "0")
