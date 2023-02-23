@@ -144,18 +144,20 @@ def video_processing(video_file, model, image_viewer=view_result_default, tracke
         tracker: DeepSort tracker
         centers: list of deque of center points of bounding boxes
     Returns:
-        result_video: result video with bounding boxes, class names, confidence scores, object masks, and possibly object IDs
+        video_file_name_out: name of output video file
         result_video_json: detection result in json format
     """
-    result_video = []
     result_video_json = []
     results = model.predict(video_file)
+    video_file_name_out = video_file.split('.')[0] + '_output.mp4'
+    video_writer = cv2.VideoWriter(video_file_name_out, cv2.VideoWriter_fourcc(*'mp4v'), 30, (results[0].orig_img.shape[1], results[0].orig_img.shape[0]))
     for result in stqdm(results, desc=f"Processing video"):
         result_list_json = result_to_json(result, tracker=tracker)
         result_video_json.append(result_list_json)
         result_image = image_viewer(result, result_list_json, centers=centers)
-        result_video.append(result_image)
-    return result_video, result_video_json
+        video_writer.write(result_image)
+    video_writer.release()
+    return video_file_name_out, result_video_json
 
 
 model = YOLO('yolov8s-seg.pt')  # Model initialization
@@ -180,9 +182,10 @@ with tab_video:
         centers = [deque(maxlen=30) for _ in range(10000)]
         video_bytes = video_file.read()
         open("temp.mp4", "wb").write(video_bytes)
-        result_video, result_video_json = video_processing("temp.mp4", model, tracker=tracker, centers=centers)
+        video_file_out, result_video_json = video_processing("temp.mp4", model, tracker=tracker, centers=centers)
         # print(json.dumps(result_video_json, indent=2))
         os.remove("temp.mp4")
+        result_video = open(video_file_out, "rb").read()
         st.video(result_video, format="video/mp4", start_time=0)
 
 with tab_live_stream:
