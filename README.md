@@ -18,7 +18,7 @@ The web app consists of three tabs in which the user can do image, video or live
 In this tab, the user can upload an image to be processed using the model mentioned above. The resulting image, with the bounding boxes and segmentation masks, is then beautifully displayed in this tab after the processing is finished.
 
 ### b. Video Processing Tab
-
+![image](https://user-images.githubusercontent.com/48774025/221053190-57d17253-d9c9-4a7b-8616-85f565a40dd4.png)
 In this tab, the user can upload a MP4 video to be processed. The resulting video, with the bounding boxes, segmentation masks and tracks of the identified objects, is then beautifully displayed in this tab after the processing is finished. In addition, the video and the JSON file with the objects detected is saved locally in a folder with the name of the initial video within the local folder "output_videos/" for further analysis.
 
 ### c. Live Stream Tab
