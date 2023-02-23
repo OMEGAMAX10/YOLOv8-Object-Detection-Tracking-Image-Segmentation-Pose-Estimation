@@ -19,7 +19,7 @@ In this tab, the user can upload an image to be processed using the model mentio
 
 ### b. Video Processing Tab
 ![image](https://user-images.githubusercontent.com/48774025/221053190-57d17253-d9c9-4a7b-8616-85f565a40dd4.png)
-In this tab, the user can upload a MP4 video to be processed. The resulting video, with the bounding boxes, segmentation masks and tracks of the identified objects, is then beautifully displayed in this tab after the processing is finished. In addition, the video and the JSON file with the objects detected is saved locally in a folder with the name of the initial video within the local folder "output_videos/" for further analysis.
+In this tab, the user can upload a MP4 video to be processed. The resulting video, with the bounding boxes, segmentation masks and tracks of the identified objects, is then beautifully displayed in this tab after the processing is finished. The video can also be viewed in full screen mode for better visualization of the result. In addition, the video and the JSON file with the objects detected is saved locally in a folder with the name of the initial video within the local folder "output_videos/" for further analysis.
 
 ### c. Live Stream Tab
 ![image](https://user-images.githubusercontent.com/48774025/221050282-673649d3-6cc2-4bab-b77a-4a738d0a325c.png)
