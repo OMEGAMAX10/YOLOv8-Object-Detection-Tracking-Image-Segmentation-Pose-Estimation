@@ -1,3 +1,4 @@
+import os
 import cv2
 import json
 import numpy as np
@@ -5,6 +6,8 @@ from ultralytics import YOLO
 from ultralytics.yolo.engine.results import Results
 from _collections import deque
 from deep_sort_realtime.deepsort_tracker import DeepSort
+from stqdm import stqdm
+import streamlit as st
 
 # colors for visualization for image visualization
 COLORS = [(56, 56, 255), (151, 157, 255), (31, 112, 255), (29, 178, 255), (49, 210, 207), (10, 249, 72), (23, 204, 146),
@@ -131,32 +134,78 @@ def image_processing(frame, model, image_viewer=view_result_default, tracker=Non
     return result_image, result_list_json
 
 
-# Model initialization
-model = YOLO('yolov8s-seg.pt')
+def video_processing(video_file, model, image_viewer=view_result_default, tracker=None, centers=None):
+    """
+    Process video file using ultralytics YOLOv8 model and possibly DeepSort tracker if it is provided
+    Parameters:
+        video_file: video file
+        model: ultralytics YOLOv8 model
+        image_viewer: function to visualize result, default is view_result_default, can be view_result_ultralytics
+        tracker: DeepSort tracker
+        centers: list of deque of center points of bounding boxes
+    Returns:
+        result_video: result video with bounding boxes, class names, confidence scores, object masks, and possibly object IDs
+        result_video_json: detection result in json format
+    """
+    result_video = []
+    result_video_json = []
+    results = model.predict(video_file)
+    for result in stqdm(results, desc=f"Processing video"):
+        result_list_json = result_to_json(result, tracker=tracker)
+        result_video_json.append(result_list_json)
+        result_image = image_viewer(result, result_list_json, centers=centers)
+        result_video.append(result_image)
+    return result_video, result_video_json
 
-# YOLOv8S-SEGMENTATION - IMAGE
-IMAGE_PATH = "images/family-and-dog.jpg"
-image = cv2.imread(IMAGE_PATH)
-image, result_list_json = image_processing(image, model)
-# print(json.dumps(result_list_json, indent=2))
-cv2.imshow(f"Image - Source: {IMAGE_PATH}", image)
-cv2.waitKey(0)
 
-# YOLOv8S-SEGMENTATION-TRACKING - REAL-TIME CAMERA
-CAM_ID = 0
-cam = cv2.VideoCapture(CAM_ID)
-cam.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
-cam.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
-tracker = DeepSort(max_age=5)
-centers = [deque(maxlen=30) for _ in range(10000)]
-while True:
-    _, image = cam.read()
-    image, result_list_json = image_processing(image, model, tracker=tracker, centers=centers)
-    # print(json.dumps(result_list_json, indent=2))
-    cv2.imshow(f"Video Stream - Source: {CAM_ID}", image)
-    if cv2.waitKey(1) == 27:  # ESC
-        break
-cam.release()
-cv2.destroyAllWindows()
-tracker.delete_all_tracks()
-centers.clear()
+model = YOLO('yolov8s-seg.pt')  # Model initialization
+st.set_page_config(page_title="YOLOv8 Processing App", layout="wide")
+st.title("YOLOv8 Ultralytics App")
+tab_image, tab_video, tab_live_stream = st.tabs(["Image Processing", "Video Processing", "Live Stream Processing"])
+
+with tab_image:
+    st.header("Image Processing using YOLOv8")
+    image_file = st.file_uploader("Upload an image", type=["jpg", "jpeg", "png"])
+    if image_file is not None:
+        img = cv2.imdecode(np.frombuffer(image_file.read(), np.uint8), 1)
+        img, result_list_json = image_processing(img, model)
+        # print(json.dumps(result_list_json, indent=2))
+        st.image(img, caption="Uploaded image", channels="BGR")
+
+with tab_video:
+    st.header("Video Processing using YOLOv8")
+    video_file = st.file_uploader("Upload a video", type=["mp4"])
+    if video_file is not None:
+        tracker = DeepSort(max_age=5)
+        centers = [deque(maxlen=30) for _ in range(10000)]
+        video_bytes = video_file.read()
+        open("temp.mp4", "wb").write(video_bytes)
+        result_video, result_video_json = video_processing("temp.mp4", model, tracker=tracker, centers=centers)
+        # print(json.dumps(result_video_json, indent=2))
+        os.remove("temp.mp4")
+        st.video(result_video, format="video/mp4", start_time=0)
+
+
+with tab_live_stream:
+    st.header("Live Stream Processing using YOLOv8")
+    CAM_ID = st.text_input("Enter a live stream source (number for webcam, RTSP or HTTP(S) URL):", "0")
+    if CAM_ID.isnumeric():
+        CAM_ID = int(CAM_ID)
+    cam = cv2.VideoCapture(CAM_ID)
+    cam.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
+    cam.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
+    tracker = DeepSort(max_age=5)
+    centers = [deque(maxlen=30) for _ in range(10000)]
+    run = st.checkbox("Run stream")
+    FRAME_WINDOW = st.image([], width=1280)
+    while run:
+        ret, image = cam.read()
+        if not ret:
+            st.error("Failed to capture stream from this camera stream. Please try again.")
+            break
+        image, result_list_json = image_processing(image, model, tracker=tracker, centers=centers)
+        # print(json.dumps(result_list_json, indent=2))
+        FRAME_WINDOW.image(image, channels="BGR", width=1280)
+    cam.release()
+    tracker.delete_all_tracks()
+    centers.clear()
