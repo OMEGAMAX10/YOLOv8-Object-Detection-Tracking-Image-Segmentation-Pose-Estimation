@@ -4,7 +4,7 @@ The results of the detection are extracted in JSON format and prepared for furth
 For an enhanced user experience, the app interface is built using "streamlit" module from Python. The app can also be deployed in a Docker container.
 
 ## 1. App Deployment
-The app can be deployed and run using the following commands:
+The app can be deployed using Docker container engine and run using the following commands:
 ```
 sudo docker build --tag yolov8-docker .
 sudo docker run -d --gpus all --name yolov8-docker -p 8501:8501 yolov8-docker
@@ -19,7 +19,7 @@ In this tab, the user can upload an image to be processed using the model mentio
 
 ### b. Video Processing Tab
 ![image](https://user-images.githubusercontent.com/48774025/221053190-57d17253-d9c9-4a7b-8616-85f565a40dd4.png)
-In this tab, the user can upload a MP4 video to be processed. The resulting video, with the bounding boxes, segmentation masks and tracks of the identified objects, is then beautifully displayed in this tab after the processing is finished. The video can also be viewed in full screen mode for better visualization of the result. In addition, the video and the JSON file with the objects detected is saved locally in a folder with the name of the initial video within the local folder "output_videos/" for further analysis.
+In this tab, the user can upload a MP4 video to be processed. The resulting video, with the bounding boxes, segmentation masks and tracks of the identified objects, is then beautifully displayed in this tab after the processing is finished. The video can also be viewed in full screen mode for better visualization of the result. In addition, the video and the JSON file with the objects detected is saved locally in a folder with the name of the initial video within the local folder **"output_videos/"** for further analysis.
 
 ### c. Live Stream Tab
 ![image](https://user-images.githubusercontent.com/48774025/221050282-673649d3-6cc2-4bab-b77a-4a738d0a325c.png)
