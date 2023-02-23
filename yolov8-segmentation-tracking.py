@@ -176,8 +176,8 @@ def video_processing(video_file, model, image_viewer=view_result_default, tracke
 
 
 model = YOLO('yolov8s-seg.pt')  # Model initialization
-st.set_page_config(page_title="YOLOv8 Processing App", layout="wide")
-st.title("YOLOv8 Ultralytics App")
+st.set_page_config(page_title="YOLOv8 Processing App", layout="wide", page_icon="./favicon-yolo.ico")
+st.title("YOLOv8 Processing App")
 tab_image, tab_video, tab_live_stream = st.tabs(["Image Processing", "Video Processing", "Live Stream Processing"])
 
 with tab_image:
