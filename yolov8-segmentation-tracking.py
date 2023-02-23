@@ -170,7 +170,7 @@ def video_processing(video_file, model, image_viewer=view_result_default, tracke
         json_file.write(',\n')
     json_file.write(']')
     video_writer.release()
-    subprocess.call(args=f"ffmpeg -i {os.path.join(os.getcwd(), temp_file)} -c:v libx264 {os.path.join(os.getcwd(), video_file_name_out)}".split(" "))
+    subprocess.call(args=f"ffmpeg -i {os.path.join('.', temp_file)} -c:v libx264 {os.path.join('.', video_file_name_out)}".split(" "))
     os.remove(temp_file)
     return video_file_name_out, result_video_json_file
 
