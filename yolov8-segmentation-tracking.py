@@ -1,6 +1,7 @@
 import os
 import cv2
 import json
+import subprocess
 import numpy as np
 from ultralytics import YOLO
 from ultralytics.yolo.engine.results import Results
@@ -145,19 +146,33 @@ def video_processing(video_file, model, image_viewer=view_result_default, tracke
         centers: list of deque of center points of bounding boxes
     Returns:
         video_file_name_out: name of output video file
-        result_video_json: detection result in json format
+        result_video_json_file: file containing detection result in json format
     """
-    result_video_json = []
     results = model.predict(video_file)
-    video_file_name_out = video_file.split('.')[0] + '_output.mp4'
-    video_writer = cv2.VideoWriter(video_file_name_out, cv2.VideoWriter_fourcc(*'mp4v'), 30, (results[0].orig_img.shape[1], results[0].orig_img.shape[0]))
+    output_folder = os.path.join('output_videos', video_file.split('.')[0])
+    if not os.path.exists(output_folder):
+        os.makedirs(output_folder)
+    video_file_name_out = os.path.join(output_folder, video_file.split('.')[0] + '_output.mp4')
+    if os.path.exists(video_file_name_out):
+        os.remove(video_file_name_out)
+    result_video_json_file = os.path.join(output_folder, video_file.split('.')[0] + '_output.json')
+    if os.path.exists(result_video_json_file):
+        os.remove(result_video_json_file)
+    json_file = open(result_video_json_file, 'a')
+    temp_file = 'temp.mp4'
+    video_writer = cv2.VideoWriter(temp_file, cv2.VideoWriter_fourcc(*'mp4v'), 30, (results[0].orig_img.shape[1], results[0].orig_img.shape[0]))
+    json_file.write('[\n')
     for result in stqdm(results, desc=f"Processing video"):
         result_list_json = result_to_json(result, tracker=tracker)
-        result_video_json.append(result_list_json)
         result_image = image_viewer(result, result_list_json, centers=centers)
         video_writer.write(result_image)
+        json.dump(result_list_json, json_file, indent=2)
+        json_file.write(',\n')
+    json_file.write(']')
     video_writer.release()
-    return video_file_name_out, result_video_json
+    subprocess.call(args=f"ffmpeg -i {os.path.join(os.getcwd(), temp_file)} -c:v libx264 {os.path.join(os.getcwd(), video_file_name_out)}".split(" "))
+    os.remove(temp_file)
+    return video_file_name_out, result_video_json_file
 
 
 model = YOLO('yolov8s-seg.pt')  # Model initialization
@@ -168,7 +183,10 @@ tab_image, tab_video, tab_live_stream = st.tabs(["Image Processing", "Video Proc
 with tab_image:
     st.header("Image Processing using YOLOv8")
     image_file = st.file_uploader("Upload an image", type=["jpg", "jpeg", "png"])
-    if image_file is not None:
+    process_image_button = st.button("Process Image")
+    if image_file is None and process_image_button:
+        st.warning("Please upload an image file to be processed!")
+    if image_file is not None and process_image_button:
         img = cv2.imdecode(np.frombuffer(image_file.read(), np.uint8), 1)
         img, result_list_json = image_processing(img, model)
         # print(json.dumps(result_list_json, indent=2))
@@ -177,16 +195,18 @@ with tab_image:
 with tab_video:
     st.header("Video Processing using YOLOv8")
     video_file = st.file_uploader("Upload a video", type=["mp4"])
-    if video_file is not None:
+    process_video_button = st.button("Process Video")
+    if video_file is None and process_video_button:
+        st.warning("Please upload a video file to be processed!")
+    if video_file is not None and process_video_button:
         tracker = DeepSort(max_age=5)
         centers = [deque(maxlen=30) for _ in range(10000)]
-        video_bytes = video_file.read()
-        open("temp.mp4", "wb").write(video_bytes)
-        video_file_out, result_video_json = video_processing("temp.mp4", model, tracker=tracker, centers=centers)
-        # print(json.dumps(result_video_json, indent=2))
-        os.remove("temp.mp4")
-        result_video = open(video_file_out, "rb").read()
-        st.video(result_video, format="video/mp4", start_time=0)
+        open(video_file.name, "wb").write(video_file.read())
+        video_file_out, result_video_json_file = video_processing(video_file.name, model, tracker=tracker, centers=centers)
+        os.remove(video_file.name)
+        # print(json.dumps(result_video_json_file, indent=2))
+        video_bytes = open(video_file_out, 'rb').read()
+        st.video(video_bytes)
 
 with tab_live_stream:
     st.header("Live Stream Processing using YOLOv8")
@@ -196,18 +216,24 @@ with tab_live_stream:
     cam = cv2.VideoCapture(CAM_ID)
     cam.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
     cam.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
-    tracker = DeepSort(max_age=5)
-    centers = [deque(maxlen=30) for _ in range(10000)]
-    run = st.checkbox("Run stream")
+    # create two columns with two buttons each
+    col_run, col_stop = st.columns(2)
+    run = col_run.button("Start Live Stream Processing")
+    stop = col_stop.button("Stop Live Stream Processing")
+    if stop:
+        run = False
     FRAME_WINDOW = st.image([], width=1280)
-    while run:
-        ret, image = cam.read()
-        if not ret:
-            st.error("Failed to capture stream from this camera stream. Please try again.")
-            break
-        image, result_list_json = image_processing(image, model, tracker=tracker, centers=centers)
-        # print(json.dumps(result_list_json, indent=2))
-        FRAME_WINDOW.image(image, channels="BGR", width=1280)
-    cam.release()
-    tracker.delete_all_tracks()
-    centers.clear()
+    if run:
+        tracker = DeepSort(max_age=5)
+        centers = [deque(maxlen=30) for _ in range(10000)]
+        while True:
+            ret, image = cam.read()
+            if not ret:
+                st.error("Failed to capture stream from this camera stream. Please try again.")
+                break
+            image, result_list_json = image_processing(image, model, tracker=tracker, centers=centers)
+            # print(json.dumps(result_list_json, indent=2))
+            FRAME_WINDOW.image(image, channels="BGR", width=1280)
+        cam.release()
+        tracker.delete_all_tracks()
+        centers.clear()

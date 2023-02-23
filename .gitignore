@@ -160,13 +160,11 @@ cython_debug/
 .idea/
 
 # Internal files
-images/
-videos/
+*/
 temp.png
 temp.jpg
 temp.jpeg
 temp.mp4
-temp_output.mp4
 
 # PyTorch YOLO weights files
 yolov*[0-9][a-z-]*.pt
