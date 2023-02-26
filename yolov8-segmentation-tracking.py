@@ -74,7 +74,7 @@ def view_result_ultralytics(result: Results, result_list_json, centers=None):
     """
     result_image_ultralytics = result.plot()
     for result_json in result_list_json:
-        class_color = COLORS[result['class_id'] % len(COLORS)]
+        class_color = COLORS[result_json['class_id'] % len(COLORS)]
         if 'object_id' in result_json and centers is not None:
             centers[result_json['object_id']].append((int((result_json['bbox']['x_min'] + result_json['bbox']['x_max']) / 2), int((result_json['bbox']['y_min'] + result_json['bbox']['y_max']) / 2)))
             for j in range(1, len(centers[result_json['object_id']])):

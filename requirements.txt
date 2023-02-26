@@ -3,4 +3,4 @@ opencv-python
 numpy
 stqdm
 deep-sort-realtime
-ultralytics==8.0.43
+ultralytics
