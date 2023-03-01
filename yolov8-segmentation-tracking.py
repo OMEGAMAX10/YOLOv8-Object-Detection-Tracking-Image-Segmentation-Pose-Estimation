@@ -37,10 +37,12 @@ def result_to_json(result: Results, tracker=None):
                 'x_max': int(result.boxes.boxes[idx][2]),
                 'y_max': int(result.boxes.boxes[idx][3]),
             },
-            'mask': cv2.resize(result.masks.data[idx].cpu().numpy(), (result.orig_shape[1], result.orig_shape[0])).tolist(),
-            'segments': result.masks.segments[idx].tolist(),
         } for idx in range(len_results)
     ]
+    if result.masks is not None:
+        for idx in range(len_results):
+            result_list_json[idx]['mask'] = cv2.resize(result.masks.data[idx].cpu().numpy(), (result.orig_shape[1], result.orig_shape[0])).tolist()
+            result_list_json[idx]['segments'] = result.masks.segments[idx].tolist()
     if tracker is not None:
         bbs = [
             (
@@ -99,8 +101,9 @@ def view_result_default(result: Results, result_list_json, centers=None):
     image = result.orig_img
     for result in result_list_json:
         class_color = COLORS[result['class_id'] % len(COLORS)]
-        image_mask = np.stack([np.array(result['mask']) * class_color[0], np.array(result['mask']) * class_color[1], np.array(result['mask']) * class_color[2]], axis=-1).astype(np.uint8)
-        image = cv2.addWeighted(image, 1, image_mask, ALPHA, 0)
+        if 'mask' in result:
+            image_mask = np.stack([np.array(result['mask']) * class_color[0], np.array(result['mask']) * class_color[1], np.array(result['mask']) * class_color[2]], axis=-1).astype(np.uint8)
+            image = cv2.addWeighted(image, 1, image_mask, ALPHA, 0)
         text = f"{result['class']} {result['object_id']}: {result['confidence']:.2f}" if 'object_id' in result else f"{result['class']}: {result['confidence']:.2f}"
         cv2.rectangle(image, (result['bbox']['x_min'], result['bbox']['y_min']), (result['bbox']['x_max'], result['bbox']['y_max']), class_color, 2)
         (text_width, text_height), baseline = cv2.getTextSize(text, cv2.FONT_HERSHEY_SIMPLEX, 0.75, 2)
@@ -149,13 +152,14 @@ def video_processing(video_file, model, image_viewer=view_result_default, tracke
         result_video_json_file: file containing detection result in json format
     """
     results = model.predict(video_file)
+    model_name = model.ckpt_path.split('/')[-1].split('.')[0]
     output_folder = os.path.join('output_videos', video_file.split('.')[0])
     if not os.path.exists(output_folder):
         os.makedirs(output_folder)
-    video_file_name_out = os.path.join(output_folder, video_file.split('.')[0] + '_output.mp4')
+    video_file_name_out = os.path.join(output_folder, f"{video_file.split('.')[0]}_{model_name}_output.mp4")
     if os.path.exists(video_file_name_out):
         os.remove(video_file_name_out)
-    result_video_json_file = os.path.join(output_folder, video_file.split('.')[0] + '_output.json')
+    result_video_json_file = os.path.join(output_folder, f"{video_file.split('.')[0]}_{model_name}_output.json")
     if os.path.exists(result_video_json_file):
         os.remove(result_video_json_file)
     json_file = open(result_video_json_file, 'a')
@@ -178,7 +182,13 @@ def video_processing(video_file, model, image_viewer=view_result_default, tracke
 st.set_page_config(page_title="YOLOv8 Processing App", layout="wide", page_icon="./favicon-yolo.ico")
 st.title("YOLOv8 Processing App")
 # create select box for selecting ultralytics YOLOv8 model
-model_select = st.selectbox("Select Ultralytics YOLOv8 model", ["yolov8n-seg", "yolov8s-seg", "yolov8m-seg", "yolov8l-seg", "yolov8x-seg"])
+model_select = st.selectbox(
+    "Select Ultralytics YOLOv8 model",
+    [
+        "yolov8n", "yolov8s", "yolov8m", "yolov8l", "yolov8x",
+        "yolov8n-seg", "yolov8s-seg", "yolov8m-seg", "yolov8l-seg", "yolov8x-seg"
+    ]
+)
 print(f"Selected ultralytics YOLOv8 model: {model_select}.pt")
 model = YOLO(f'{model_select}.pt')  # Model initialization
 tab_image, tab_video, tab_live_stream = st.tabs(["Image Processing", "Video Processing", "Live Stream Processing"])
