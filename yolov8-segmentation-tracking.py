@@ -226,7 +226,6 @@ with tab_live_stream:
     CAM_ID = st.text_input("Enter a live stream source (number for webcam, RTSP or HTTP(S) URL):", "0")
     if CAM_ID.isnumeric():
         CAM_ID = int(CAM_ID)
-    # create two columns with two buttons each
     col_run, col_stop = st.columns(2)
     run = col_run.button("Start Live Stream Processing")
     stop = col_stop.button("Stop Live Stream Processing")
