@@ -32,17 +32,17 @@ def result_to_json(result: Results, tracker=None):
             'class': result.names[int(result.boxes.cls[idx])],
             'confidence': float(result.boxes.conf[idx]),
             'bbox': {
-                'x_min': int(result.boxes.boxes[idx][0]),
-                'y_min': int(result.boxes.boxes[idx][1]),
-                'x_max': int(result.boxes.boxes[idx][2]),
-                'y_max': int(result.boxes.boxes[idx][3]),
+                'x_min': int(result.boxes.data[idx][0]),
+                'y_min': int(result.boxes.data[idx][1]),
+                'x_max': int(result.boxes.data[idx][2]),
+                'y_max': int(result.boxes.data[idx][3]),
             },
         } for idx in range(len_results)
     ]
     if result.masks is not None:
         for idx in range(len_results):
             result_list_json[idx]['mask'] = cv2.resize(result.masks.data[idx].cpu().numpy(), (result.orig_shape[1], result.orig_shape[0])).tolist()
-            result_list_json[idx]['segments'] = result.masks.segments[idx].tolist()
+            result_list_json[idx]['segments'] = result.masks.xyn[idx].tolist()
     if tracker is not None:
         bbs = [
             (
