@@ -7,7 +7,7 @@ For an enhanced user experience, the app interface is built using "streamlit" mo
 The app can be deployed using Docker container engine and run using the following commands:
 ```
 sudo docker build --tag yolov8-docker .
-sudo docker run -d --gpus all --name yolov8-docker -p 8501:8501 yolov8-docker
+sudo docker run -d --gpus all --name yolov8-docker -p 80:8501 yolov8-docker
 ```
 
 ## 2. App Usage
