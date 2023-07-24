@@ -1,5 +1,5 @@
 # YOLOv8 Image Segmentation, Object Detection and Tracking
-YOLOv8 object detection, tracking, pose detection image segmentation using Ultralytics API (for detection, pose detection and segmentation), as well as DeepSORT (for tracking) in Python.
+YOLOv8 object detection, tracking, pose estimation image segmentation using Ultralytics API (for detection, pose estimation and segmentation), as well as DeepSORT (for tracking) in Python.
 The results of the detection are extracted in JSON format and prepared for further processing.
 For an enhanced user experience, the app interface is built using "streamlit" module from Python. The app can also be deployed in a Docker container.
 
