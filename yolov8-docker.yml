@@ -1,0 +1,18 @@
+version: "3.8"
+
+services:
+  yolov8-docker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: yolov8-docker
+    container_name: yolov8-docker
+    ports:
+      - "80:8501"
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
