@@ -10,7 +10,7 @@ jobs:
 
   build:
 
-    runs-on: python:3.9-slim-buster
+    runs-on: ubuntu-latest
 
     steps:
     - uses: actions/checkout@v3
