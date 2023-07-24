@@ -4,7 +4,7 @@ The results of the detection are extracted in JSON format and prepared for furth
 For an enhanced user experience, the app interface is built using "streamlit" module from Python. The app can also be deployed in a Docker container.
 
 ## 1. App Deployment
-The app can be deployed using Docker container engine and run using the following command:
+The app can be deployed using Docker Compose using the following command:
 ```
 docker-compose -f yolov8-docker.yml up -d
 ```
