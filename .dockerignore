@@ -9,5 +9,5 @@ temp.jpg
 temp.jpeg
 temp.mp4
 
-# PyTorch YOLO weights files
-yolov*[0-9][a-z-]*.pt
+# models folder
+models/

@@ -4,7 +4,7 @@ import json
 import subprocess
 import numpy as np
 from ultralytics import YOLO
-from ultralytics.yolo.engine.results import Results
+from ultralytics.engine.results import Results
 from _collections import deque
 from deep_sort_realtime.deepsort_tracker import DeepSort
 from stqdm import stqdm
@@ -43,6 +43,9 @@ def result_to_json(result: Results, tracker=None):
         for idx in range(len_results):
             result_list_json[idx]['mask'] = cv2.resize(result.masks.data[idx].cpu().numpy(), (result.orig_shape[1], result.orig_shape[0])).tolist()
             result_list_json[idx]['segments'] = result.masks.xyn[idx].tolist()
+    if result.keypoints is not None:
+        for idx in range(len_results):
+            result_list_json[idx]['keypoints'] = result.keypoints.xyn[idx].tolist()
     if tracker is not None:
         bbs = [
             (
@@ -64,30 +67,7 @@ def result_to_json(result: Results, tracker=None):
     return result_list_json
 
 
-def view_result_ultralytics(result: Results, result_list_json, centers=None):
-    """
-    Visualize result from ultralytics YOLOv8 prediction using ultralytics YOLOv8 built-in visualization function
-    Parameters:
-        result: Results from ultralytics YOLOv8 prediction
-        result_list_json: detection result in json format
-        centers: list of deque of center points of bounding boxes
-    Returns:
-        result_image_ultralytics: result image from ultralytics YOLOv8 built-in visualization function
-    """
-    result_image_ultralytics = result.plot()
-    for result_json in result_list_json:
-        class_color = COLORS[result_json['class_id'] % len(COLORS)]
-        if 'object_id' in result_json and centers is not None:
-            centers[result_json['object_id']].append((int((result_json['bbox']['x_min'] + result_json['bbox']['x_max']) / 2), int((result_json['bbox']['y_min'] + result_json['bbox']['y_max']) / 2)))
-            for j in range(1, len(centers[result_json['object_id']])):
-                if centers[result_json['object_id']][j - 1] is None or centers[result_json['object_id']][j] is None:
-                    continue
-                thickness = int(np.sqrt(64 / float(j + 1)) * 2)
-                cv2.line(result_image_ultralytics, centers[result_json['object_id']][j - 1], centers[result_json['object_id']][j], class_color, thickness)
-    return result_image_ultralytics
-
-
-def view_result_default(result: Results, result_list_json, centers=None):
+def view_result(result: Results, result_list_json, centers=None):
     """
     Visualize result from ultralytics YOLOv8 prediction using default visualization function
     Parameters:
@@ -97,15 +77,10 @@ def view_result_default(result: Results, result_list_json, centers=None):
     Returns:
         result_image_default: result image from default visualization function
     """
-    ALPHA = 0.5
-    image = result.orig_img
+    image = result.plot(labels=False, line_width=2)
     for result in result_list_json:
         class_color = COLORS[result['class_id'] % len(COLORS)]
-        if 'mask' in result:
-            image_mask = np.stack([np.array(result['mask']) * class_color[0], np.array(result['mask']) * class_color[1], np.array(result['mask']) * class_color[2]], axis=-1).astype(np.uint8)
-            image = cv2.addWeighted(image, 1, image_mask, ALPHA, 0)
         text = f"{result['class']} {result['object_id']}: {result['confidence']:.2f}" if 'object_id' in result else f"{result['class']}: {result['confidence']:.2f}"
-        cv2.rectangle(image, (result['bbox']['x_min'], result['bbox']['y_min']), (result['bbox']['x_max'], result['bbox']['y_max']), class_color, 2)
         (text_width, text_height), baseline = cv2.getTextSize(text, cv2.FONT_HERSHEY_SIMPLEX, 0.75, 2)
         cv2.rectangle(image, (result['bbox']['x_min'], result['bbox']['y_min'] - text_height - baseline), (result['bbox']['x_min'] + text_width, result['bbox']['y_min']), class_color, -1)
         cv2.putText(image, text, (result['bbox']['x_min'], result['bbox']['y_min'] - baseline), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (255, 255, 255), 2)
@@ -119,13 +94,12 @@ def view_result_default(result: Results, result_list_json, centers=None):
     return image
 
 
-def image_processing(frame, model, image_viewer=view_result_default, tracker=None, centers=None):
+def image_processing(frame, model, tracker=None, centers=None):
     """
     Process image frame using ultralytics YOLOv8 model and possibly DeepSort tracker if it is provided
     Parameters:
         frame: image frame
         model: ultralytics YOLOv8 model
-        image_viewer: function to visualize result, default is view_result_default, can be view_result_ultralytics
         tracker: DeepSort tracker
         centers: list of deque of center points of bounding boxes
     Returns:
@@ -134,17 +108,16 @@ def image_processing(frame, model, image_viewer=view_result_default, tracker=Non
     """
     results = model.predict(frame)
     result_list_json = result_to_json(results[0], tracker=tracker)
-    result_image = image_viewer(results[0], result_list_json, centers=centers)
+    result_image = view_result(results[0], result_list_json, centers=centers)
     return result_image, result_list_json
 
 
-def video_processing(video_file, model, image_viewer=view_result_default, tracker=None, centers=None):
+def video_processing(video_file, model, tracker=None, centers=None):
     """
     Process video file using ultralytics YOLOv8 model and possibly DeepSort tracker if it is provided
     Parameters:
         video_file: video file
         model: ultralytics YOLOv8 model
-        image_viewer: function to visualize result, default is view_result_default, can be view_result_ultralytics
         tracker: DeepSort tracker
         centers: list of deque of center points of bounding boxes
     Returns:
@@ -168,7 +141,7 @@ def video_processing(video_file, model, image_viewer=view_result_default, tracke
     json_file.write('[\n')
     for result in stqdm(results, desc=f"Processing video"):
         result_list_json = result_to_json(result, tracker=tracker)
-        result_image = image_viewer(result, result_list_json, centers=centers)
+        result_image = view_result(result, result_list_json, centers=centers)
         video_writer.write(result_image)
         json.dump(result_list_json, json_file, indent=2)
         json_file.write(',\n')
@@ -179,19 +152,17 @@ def video_processing(video_file, model, image_viewer=view_result_default, tracke
     return video_file_name_out, result_video_json_file
 
 
+if not os.path.exists("models/"):
+    os.makedirs("models/")
+model_list = [model_name.strip() for model_name in open("model_list.txt").readlines()]
 st.set_page_config(page_title="YOLOv8 Processing App", layout="wide", page_icon="./favicon-yolo.ico")
 st.title("YOLOv8 Processing App")
 # create select box for selecting ultralytics YOLOv8 model
-model_select = st.selectbox(
-    "Select Ultralytics YOLOv8 model",
-    [
-        "yolov8n", "yolov8s", "yolov8m", "yolov8l", "yolov8x",
-        "yolov8n-seg", "yolov8s-seg", "yolov8m-seg", "yolov8l-seg", "yolov8x-seg"
-    ]
-)
-print(f"Selected ultralytics YOLOv8 model: {model_select}.pt")
-model = YOLO(f'{model_select}.pt')  # Model initialization
-tab_image, tab_video, tab_live_stream = st.tabs(["Image Processing", "Video Processing", "Live Stream Processing"])
+model_selectbox = st.empty()
+model_select = model_selectbox.selectbox("Select Ultralytics YOLOv8 model", model_list)
+print(f"Selected ultralytics YOLOv8 model: {model_select}")
+model = YOLO(f'models/{model_select}.pt')  # Model initialization
+tab_image, tab_video, tab_live_stream, tab_upload_model = st.tabs(["Image Processing", "Video Processing", "Live Stream Processing", "Upload Custom YOLOv8 Model"])
 
 with tab_image:
     st.header("Image Processing using YOLOv8")
@@ -249,3 +220,21 @@ with tab_live_stream:
         cam.release()
         tracker.delete_all_tracks()
         centers.clear()
+
+with tab_upload_model:
+    st.header("Upload Custom YOLOv8 Model")
+    model_file = st.file_uploader("Upload a model", type=["pt"])
+    model_upload_button = st.button("Upload Model")
+    if model_file is None and model_upload_button:
+        st.warning("Please upload a custom model!")
+    if model_file is not None and model_upload_button:
+        model_name = model_file.name.split(".")[0]
+        if model_name in model_list:
+            st.error("The uploaded model already in list!")
+        else:
+            open(os.path.join("models/", model_file.name), "wb").write(model_file.read())
+            model_list.append(model_name)
+            with open("model_list.txt", "a") as f:
+                f.write(f"\n{model_name}")
+                st.write(f"Model {model_name} was uploaded successfully!")
+                model_select = model_selectbox.selectbox("Select Ultralytics YOLOv8 model", model_list)

@@ -1,0 +1,14 @@
+yolov8n
+yolov8s
+yolov8m
+yolov8l
+yolov8x
+yolov8n-seg
+yolov8s-seg
+yolov8m-seg
+yolov8l-seg
+yolov8x-seg
+yolov8n-pose
+yolov8s-pose
+yolov8m-pose
+yolov8l-pose
