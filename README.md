@@ -25,6 +25,6 @@ In this tab, the user can upload a MP4 video to be processed. The resulting vide
 ![image](https://user-images.githubusercontent.com/48774025/221050282-673649d3-6cc2-4bab-b77a-4a738d0a325c.png)
 In this tab, the user can add the URL for a live video stream, which can be either a integer (0, 1, 2 etc.) for a physically connected camera, like USB or built-in webcams, or a RTSP stream from a remotely connected camera. After starting the processing of the stream, the resulting frames, with the bounding boxes, segmentation masks and tracks of the identified objects, are displayed in real time. The processing of the stream can be started and stopped at any time using the two buttons "Start Live Stream Processing" and "Stop Live Stream Processing".
 
-### d. Custom YOLOv8 Model Upload
-
-In this tab, the user can upload a custom YOLOv8 model, trained on a custom dataset. The model is stored in a folder named "models/" and added to "model_list.txt" for future use. The only eligible type of model is the Pytorch (".pt") one.
+### d. Custom YOLOv8 Model Upload Tab
+![image](https://github.com/BogdanMarghescu/YOLOv8-Image-Segmentation-Object-Detection-and-Tracking/assets/48774025/651192b1-ba55-4e8d-ab2f-d0810309f9ab)
+In this tab, the user can upload a custom YOLOv8 model, trained on a custom dataset. The model is stored in a folder named "models/" and added to "model_list.txt" for future use. After it was added, the model can then be selected in the dropdown menu at the beginning of the page, and it is usually found at the end of the list of the predefined models. The only eligible type of model is the Pytorch (".pt") one.
