@@ -223,7 +223,7 @@ with tab_live_stream:
 
 with tab_upload_model:
     st.header("Upload Custom YOLOv8 Model")
-    model_file = st.file_uploader("Upload a model", type=["pt"])
+    model_file = st.file_uploader("Upload a model:", type=["pt"])
     model_upload_button = st.button("Upload Model")
     if model_file is None and model_upload_button:
         st.warning("Please upload a custom model!")
