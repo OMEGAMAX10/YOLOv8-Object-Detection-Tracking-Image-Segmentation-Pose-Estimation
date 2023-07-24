@@ -27,4 +27,4 @@ In this tab, the user can add the URL for a live video stream, which can be eith
 
 ### d. Custom YOLOv8 Model Upload
 
-In this tab, the user can upload a custom YOLOv8 model, trained on a custom dataset. The model is stored in a folder named "models/" and added to "model_list.txt" for future use.
+In this tab, the user can upload a custom YOLOv8 model, trained on a custom dataset. The model is stored in a folder named "models/" and added to "model_list.txt" for future use. The only eligible type of model is the Pytorch (".pt") one.
