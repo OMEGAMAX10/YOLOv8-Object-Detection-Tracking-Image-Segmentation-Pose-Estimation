@@ -2,7 +2,7 @@
 YOLOv8 object detection, tracking, image segmentation and pose estimation using Ultralytics API (for detection, pose estimation and segmentation), as well as DeepSORT (for tracking) in Python.
 The results of the detection are extracted in JSON format and prepared for further processing.
 For an enhanced user experience, the app interface is built using "streamlit" module from Python. The app can also be deployed in a Docker container.
-This app is also available as a [public container on Docker Hub](https://hub.docker.com/r/omegamax10/yolov8-docker).
+This app is also available as a [public container on Docker Hub](https://hub.docker.com/r/bmarghescu/yolov8-docker).
 
 ## 1. App Deployment
 The app can be deployed using Docker Compose using the following command:
@@ -11,8 +11,8 @@ docker-compose -f yolov8-docker.yml up -d
 ```
 If you want to deploy the app using the official container from Docker Hub, use the following commands:
 ```
-docker pull omegamax10/yolov8-docker
-docker run -d --gpus all --name yolov8-docker -p 80:8501 omegamax10/yolov8-docker:latest
+docker pull bmarghescu/yolov8-docker
+docker run -d --gpus all --name yolov8-docker -p 80:8501 bmarghescu/yolov8-docker:latest
 ```
 
 ## 2. App Usage
