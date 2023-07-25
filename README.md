@@ -9,6 +9,11 @@ The app can be deployed using Docker Compose using the following command:
 ```
 docker-compose -f yolov8-docker.yml up -d
 ```
+If you want to deploy the app using the official container from Docker Hub, use the following commands:
+```
+docker pull omegamax10/yolov8-docker
+docker run -d --gpus all --name yolov8-docker -p 80:8501 omegamax10/yolov8-docker:latest
+```
 
 ## 2. App Usage
 The web app consists of four tabs in which the user can do image, video or live stream processing using the model [YOLOv8 developed by Ultralytics](https://github.com/ultralytics/ultralytics), as well as upload a custom YOLOv8 model. The application is composed of four tabs as follows:
