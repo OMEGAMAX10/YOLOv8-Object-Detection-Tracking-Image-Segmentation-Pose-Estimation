@@ -125,7 +125,7 @@ def video_processing(video_file, model, tracker=None, centers=None):
         result_video_json_file: file containing detection result in json format
     """
     results = model.predict(video_file)
-    model_name = model.ckpt_path.split('/')[-1].split('.')[0]
+    model_name = os.path.basename(model.ckpt_path).split('.')[0]
     output_folder = os.path.join('output_videos', video_file.split('.')[0])
     if not os.path.exists(output_folder):
         os.makedirs(output_folder)
